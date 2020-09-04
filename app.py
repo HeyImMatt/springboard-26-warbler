@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, EditUserForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Likes
 
 CURR_USER_KEY = "curr_user"
 
@@ -146,13 +146,14 @@ def users_show(user_id):
 
     # snagging messages in order from the database;
     # user.messages won't be in order by default
+    likes = [like.id for like in g.user.likes]
     messages = (Message
                 .query
                 .filter(Message.user_id == user_id)
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+    return render_template('users/show.html', user=user, messages=messages, likes=likes)
 
 
 @app.route('/users/<int:user_id>/following')
@@ -304,6 +305,20 @@ def messages_destroy(message_id):
 
     return redirect(f"/users/{g.user.id}")
 
+@app.route('/messages/<int:message_id>/like', methods=["POST"])
+def messages_like(message_id):
+    """Like a message."""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    like = Likes(user_id=g.user.id, message_id=message_id)
+    db.session.add(like)
+    db.session.commit()
+
+    return redirect(f"/")
+
 
 ##############################################################################
 # Homepage and error pages
@@ -319,6 +334,7 @@ def homepage():
 
     if g.user:
         following_ids = [user.id for user in g.user.following]
+        likes = [like.id for like in g.user.likes]
         messages = (Message
                     .query
                     .filter(Message.user_id.in_(following_ids))
@@ -326,7 +342,7 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages)
+        return render_template('home.html', messages=messages, likes=likes)
 
     else:
         return render_template('home-anon.html')
