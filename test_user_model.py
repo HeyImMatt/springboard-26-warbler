@@ -35,11 +35,35 @@ class UserModelTestCase(TestCase):
     def setUp(self):
         """Create test client, add sample data."""
 
-        User.query.delete()
-        Message.query.delete()
-        Follows.query.delete()
+        db.drop_all()
+        db.create_all()
+
+        user1 = User.signup('user1', 'test1@test.nil', 'testpw', None)
+        uid1 = 111
+        user1.id = uid1
+
+        user2 = User.signup('user2', 'test2@test.nil', 'testpw', None)
+        uid2 = 222
+        user2.id = uid2
+
+        db.session.commit()
+
+        u1 = User.query.get(uid1)
+        u2 = User.query.get(uid2)
+
+        self.u1 = u1
+        self.uid1 = uid1
+
+        self.u2 = u2
+        self.uid2 = uid2
 
         self.client = app.test_client()
+    
+    def tearDown(self):
+        res = super().tearDown()
+        db.session.rollback()
+        return res
+
 
     def test_user_model(self):
         """Does basic model work?"""
