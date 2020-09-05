@@ -81,9 +81,8 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(u.messages), 0)
         self.assertEqual(len(u.followers), 0)
 
+    # Tests for user following
     def test_user_follows(self):
-        """Tests u1 following u2"""
-
         self.u1.following.append(self.u2)
         db.session.commit()
 
@@ -94,3 +93,17 @@ class UserModelTestCase(TestCase):
 
         self.assertEqual(self.u2.followers[0].id, self.u1.id)
         self.assertEqual(self.u1.following[0].id, self.u2.id)
+
+    def test_is_following(self):
+        self.u1.following.append(self.u2)
+        db.session.commit()
+
+        self.assertTrue(self.u1.is_following(self.u2))
+        self.assertFalse(self.u2.is_following(self.u1))
+
+    def test_is_followed_by(self):
+        self.u1.following.append(self.u2)
+        db.session.commit()
+
+        self.assertTrue(self.u2.is_followed_by(self.u1))
+        self.assertFalse(self.u1.is_followed_by(self.u2))
